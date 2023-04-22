@@ -1,8 +1,14 @@
 package com.moviebookingapp.techacadeemy.entities;
 
 
+import java.util.Set;
+
+import javax.management.relation.Role;
+import javax.validation.constraints.Pattern;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -14,12 +20,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 @Document("user")
-public class User {
+public class UserModel {
 
 	@Id
 	@Indexed(unique = true)
+    @Pattern(regexp = "^[a-zA-Z0-9]+$")
 	private String loginId;
 	private String firstName;
 	private String lastName;
@@ -28,5 +34,8 @@ public class User {
 	private String password;
 	private String confirmPassword;
 	private String conactNumber;
+	
+	@DBRef
+	private Set<Role> roles;
 	
 }
