@@ -9,7 +9,6 @@ import com.moviebookingapp.techacadeemy.entities.Movie;
 import com.moviebookingapp.techacadeemy.entities.User;
 
 public interface MovieRepository extends MongoRepository<Movie, String> {
-	List<Movie> findAll();
-	Boolean existsByMovieNameContainingIgnoreCase(String movieName);
-	Movie findByMovieNameContainingIgnoreCase(String movieName);
+	List<Movie> findByMovieNameContainingIgnoreCase(String movieName);
+    Movie findByMovieId(String movieId);
 }

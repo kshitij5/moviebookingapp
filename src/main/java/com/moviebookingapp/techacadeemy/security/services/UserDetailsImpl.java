@@ -1,6 +1,5 @@
 package com.moviebookingapp.techacadeemy.security.services;
 
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -16,96 +15,91 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.moviebookingapp.techacadeemy.entities.User;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class UserDetailsImpl implements UserDetails {
-  private static final long serialVersionUID = 1L;
-  
-  private String loginId;
+	private static final long serialVersionUID = 1L;
 
-  private String emailId;
-  
-  @NotBlank
-  @Size(max = 20)
-  private String firstName;
-  
-  @NotBlank
-  @Size(max = 20)
-  private String lastName;
+	private String loginId;
 
-  @JsonIgnore
-  private String password;
+	private String emailId;
 
-  private Collection<? extends GrantedAuthority> authorities;
+	@NotBlank
+	@Size(max = 20)
+	private String firstName;
 
+	@NotBlank
+	@Size(max = 20)
+	private String lastName;
 
-  public UserDetailsImpl(String loginId, String firstName,String lastName, String emailId, String password,
-      Collection<? extends GrantedAuthority> authorities) {
-    this.loginId = loginId;
-    this.firstName = firstName;
-    this.lastName = lastName;
-    this.emailId = emailId;
-    this.password = password;
-    this.authorities = authorities;
-  }
+	@JsonIgnore
+	private String password;
 
-  public static UserDetailsImpl build(User user) {
-    List<GrantedAuthority> authorities = user.getRoles().stream()
-        .map(role -> new SimpleGrantedAuthority(role.getName().name()))
-        .collect(Collectors.toList());
+	private Collection<? extends GrantedAuthority> authorities;
 
-    return new UserDetailsImpl(
-        user.getLoginId(), 
-        user.getFirstName(), 
-        user.getLastName(), 
-        user.getEmailId(),
-        user.getPassword(), 
-        authorities);
-  }
+	public UserDetailsImpl(String loginId, String firstName, String lastName, String emailId, String password,
+			Collection<? extends GrantedAuthority> authorities) {
+		this.loginId = loginId;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.emailId = emailId;
+		this.password = password;
+		this.authorities = authorities;
+	}
 
-  @Override
-  public Collection<? extends GrantedAuthority> getAuthorities() {
-    return authorities;
-  }
+	public static UserDetailsImpl build(User user) {
+		List<GrantedAuthority> authorities = user.getRoles().stream()
+				.map(role -> new SimpleGrantedAuthority(role.getName().name())).collect(Collectors.toList());
 
-  @Override
-  public boolean isAccountNonExpired() {
-    return true;
-  }
+		return new UserDetailsImpl(user.getLoginId(), user.getFirstName(), user.getLastName(), user.getEmailId(),
+				user.getPassword(), authorities);
+	}
 
-  @Override
-  public boolean isAccountNonLocked() {
-    return true;
-  }
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return authorities;
+	}
 
-  @Override
-  public boolean isCredentialsNonExpired() {
-    return true;
-  }
+	@Override
+	public boolean isAccountNonExpired() {
+		return true;
+	}
 
-  @Override
-  public boolean isEnabled() {
-    return true;
-  }
+	@Override
+	public boolean isAccountNonLocked() {
+		return true;
+	}
 
-  @Override
-  public boolean equals(Object o) {
-    if (this == o)
-      return true;
-    if (o == null || getClass() != o.getClass())
-      return false;
-    UserDetailsImpl user = (UserDetailsImpl) o;
-    return Objects.equals(loginId, user.loginId);
-  }
+	@Override
+	public boolean isCredentialsNonExpired() {
+		return true;
+	}
 
-@Override
-public String getUsername() {
-	// TODO Auto-generated method stub
-	return emailId;
-}
+	@Override
+	public boolean isEnabled() {
+		return true;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+		UserDetailsImpl user = (UserDetailsImpl) o;
+		return Objects.equals(loginId, user.loginId);
+	}
+
+	@Override
+	public String getUsername() {
+		// TODO Auto-generated method stub
+		return emailId;
+	}
 
 }

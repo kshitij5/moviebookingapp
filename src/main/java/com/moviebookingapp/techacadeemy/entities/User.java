@@ -50,6 +50,7 @@ public class User {
 
 	@NotBlank
 	@Size(max = 10)
+	@Indexed(unique = true)
 	private String contactNumber;
 
 	@DBRef

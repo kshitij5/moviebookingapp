@@ -1,27 +1,30 @@
 package com.moviebookingapp.techacadeemy.controller;
 
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.HeadersBuilder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,7 +32,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.moviebookingapp.techacadeemy.entities.ERole;
 import com.moviebookingapp.techacadeemy.entities.Role;
 import com.moviebookingapp.techacadeemy.entities.User;
+import com.moviebookingapp.techacadeemy.exception.UserNotFoundException;
 import com.moviebookingapp.techacadeemy.payload.request.LoginRequest;
+import com.moviebookingapp.techacadeemy.payload.request.PasswordResetRequest;
 import com.moviebookingapp.techacadeemy.payload.request.SignupRequest;
 import com.moviebookingapp.techacadeemy.payload.response.MessageResponse;
 import com.moviebookingapp.techacadeemy.payload.response.UserInfoResponse;
@@ -38,12 +43,13 @@ import com.moviebookingapp.techacadeemy.repository.UserRepository;
 import com.moviebookingapp.techacadeemy.security.jwt.JwtUtils;
 import com.moviebookingapp.techacadeemy.security.services.UserDetailsImpl;
 
-import lombok.extern.slf4j.Slf4j;
-
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "http://localhost:4200/")
 @RestController
-@RequestMapping("/api/v1.0/moviebooking")
+@RequestMapping("/api/v1.0/moviebooking/auth")
 public class AuthController {
+
+	Logger logger = LoggerFactory.getLogger(AuthController.class);
+
 	@Autowired
 	AuthenticationManager authenticationManager;
 
@@ -59,11 +65,20 @@ public class AuthController {
 	@Autowired
 	private JwtUtils jwtUtils;
 
+	/**
+	 * logs in user
+	 * 
+	 * @param loginRequest
+	 * @return User
+	 */
 	@PostMapping("/login")
-	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+	public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest)
+			throws Exception, UserNotFoundException {
 
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(loginRequest.getEmailId(), loginRequest.getPassword()));
+
+		logger.info("-------User logged in---------");
 
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -79,8 +94,15 @@ public class AuthController {
 						userDetails.getLastName(), userDetails.getEmailId(), roles));
 	}
 
+	/**
+	 * signup user
+	 * 
+	 * @param signUpRequest
+	 * @return user
+	 * @throws Exception
+	 */
 	@PostMapping("/signup")
-	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+	public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) throws Exception {
 		if (!(signUpRequest.getPassword().equals(signUpRequest.getConfirmPassword())))
 			return ResponseEntity.badRequest().body(new MessageResponse("Error: Password doesn't match!"));
 
@@ -89,9 +111,8 @@ public class AuthController {
 		}
 
 		// Create new user's account
-		User user = new User(signUpRequest.getFirstName(), signUpRequest.getLastName(),
-				signUpRequest.getEmailId(), encoder.encode(signUpRequest.getPassword()),
-				signUpRequest.getContactNumber());
+		User user = new User(signUpRequest.getFirstName(), signUpRequest.getLastName(), signUpRequest.getEmailId(),
+				encoder.encode(signUpRequest.getPassword()), signUpRequest.getContactNumber());
 
 		Set<String> strRoles = signUpRequest.getRoles();
 		Set<Role> roles = new HashSet<>();
@@ -109,12 +130,6 @@ public class AuthController {
 					roles.add(adminRole);
 
 					break;
-//				case "mod":
-//					Role modRole = roleRepository.findByName(ERole.ROLE_MODERATOR)
-//							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-//					roles.add(modRole);
-//
-//					break;
 				default:
 					Role userRole = roleRepository.findByName(ERole.ROLE_USER)
 							.orElseThrow(() -> new RuntimeException("Error: Role is not found."));
@@ -126,20 +141,56 @@ public class AuthController {
 		user.setRoles(roles);
 		userRepository.save(user);
 
-		return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+		logger.info("-------User Signed Up---------");
+		return new ResponseEntity<>(user, HttpStatus.CREATED);
 	}
 
-	@GetMapping("/{username}/forgot")
-	public ResponseEntity<?> forgot(@PathVariable String username) {
-		if(userRepository.existsByEmailId(username)) {
-			 return ResponseEntity.ok(new MessageResponse("User exist in db! Reset feature will be added soon"));
+	/**
+	 * @param emailId
+	 * @param contactNumber
+	 * @return Boolean
+	 * @throws UserNotFoundException
+	 */
+	@GetMapping("/canResetPassword")
+	public ResponseEntity<User> passwordResetabble(@RequestParam String emailId, @RequestParam String contactNumber)
+			throws UserNotFoundException {
+		if (userRepository.existsByEmailId(emailId) && userRepository.existsByContactNumber(contactNumber)
+				&& !userRepository.findById(emailId).get().getRoles().contains("ROLE_ADMIN")) {
+			logger.info("-------Password can be Reset---------");
+			return new ResponseEntity<>(userRepository.findByEmailId(emailId).get(), HttpStatus.OK);
 		} else
-		return ResponseEntity.badRequest().body(new MessageResponse("Error: Email Id doesn't exist"));
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+	}
+
+	/**
+	 * reset user password// dummy implementation
+	 * 
+	 * @param username/emailId
+	 * @return HTTP status
+	 * @throws UserNotFoundException
+	 */
+	@PostMapping("/{userId}/forgot")
+	public ResponseEntity<?> forgot(@PathVariable String userId, @RequestBody PasswordResetRequest passwordReset)
+			throws UserNotFoundException {
+
+		ResponseEntity<User> response = null;
+		if (userRepository.existsById(userId)) {
+			User user = userRepository.findById(userId).get();
+			user.setPassword(encoder.encode(passwordReset.getConfirmPassword()));
+			userRepository.save(user);
+			logger.info("-------Password Reset Successfully---------");
+			response = new ResponseEntity<>(HttpStatus.CREATED);
+		} else {
+			response = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+			throw new UserNotFoundException("User with " + userId + " id dosen't exist");
+		}
+
+		return response;
 	}
 
 	@GetMapping("/test")
 	public ResponseEntity<?> all() {
-		return null;
+		return ResponseEntity.ok(new MessageResponse("APIs working fine"));
 	}
 
 }

@@ -1,8 +1,8 @@
 package com.moviebookingapp.techacadeemy.entities;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import java.util.Date;
 
+import javax.validation.constraints.NotBlank;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -25,13 +25,12 @@ public class Movie {
     private String movieId;
     @NotBlank
     private String movieName;
-    @NotBlank
-    private String theatreName;
-    @NotNull
-    private Long numberOfTickets;
-    @NotBlank
-    private String ticketStatus;
-    @NotNull
-    private Integer releaseDate;
-
+    private String moviePosterUrl;
+    private String movieHours;
+    private String movieGenre;
+    private String movieLanguage;
+    private String movieDescription;
+    private Double movieRating;
+    private Date movieDate;
+//	private Show show;
 }
