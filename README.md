@@ -1,0 +1,1 @@
+BookMyMovie is a comprehensive movie ticket booking system designed to streamline the movie-going experience for users. With a user-friendly interface, customers can easily browse through a wide selection of movies, view showtimes, and reserve seats at their preferred theaters with just a few clicks.
